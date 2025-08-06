@@ -1,7 +1,98 @@
-import React from "react";
+import React, { useState } from "react";
 import styled from "styled-components";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { FaArrowLeft } from "react-icons/fa";
+
+const LoginPage: React.FC = () => {
+  const navigate = useNavigate();
+  const [email, setEmail] = useState("");
+  const [senha, setSenha] = useState("");
+  const [mensagemErro, setMensagemErro] = useState("");
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setMensagemErro("");
+
+    try {
+      const response = await fetch("http://localhost:8000/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, senha }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setMensagemErro(data.detail || "Erro ao fazer login.");
+        return;
+      }
+
+      // Decodificar o token para saber se é professor
+      const payload = JSON.parse(atob(data.access_token.split(".")[1]));
+
+      if (payload.is_professor) {
+        setMensagemErro("Esta conta é de professor. Use a página de login de professores.");
+        return;
+      }
+
+      // Salvar token e redirecionar
+      localStorage.setItem("token", data.access_token);
+      navigate("/aluno-dashboard"); // Substitua pela rota real
+
+    } catch (err) {
+      setMensagemErro("Erro de conexão com o servidor.");
+    }
+  };
+
+  return (
+    <Container>
+      <LeftSide>
+        <BackButton to="/">
+          <FaArrowLeft />
+          Voltar
+        </BackButton>
+
+        <Form onSubmit={handleSubmit}>
+          <Title>Welcome Back!</Title>
+
+          <Label>Email:</Label>
+          <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Enter email" />
+
+          <Label>Password:</Label>
+          <Input type="password" value={senha} onChange={(e) => setSenha(e.target.value)} placeholder="Enter password" />
+
+          {mensagemErro && <ErrorMsg>{mensagemErro}</ErrorMsg>}
+
+          <Button type="submit">Login</Button>
+
+          <RegisterText>
+            Don’t have an account?
+            <Link to="/register">Register</Link>
+          </RegisterText>
+
+          <TeacherText>
+            É professor?
+            <Link to="/professor-login">Clique aqui</Link>
+          </TeacherText>
+        </Form>
+
+        <DecorativeShape />
+      </LeftSide>
+
+      <RightSide />
+    </Container>
+  );
+};
+
+export default LoginPage;
+
+// Adicione no final do arquivo
+const ErrorMsg = styled.p`
+  color: red;
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+`;
+
 
 const Container = styled.div`
   display: flex;
@@ -133,43 +224,3 @@ const DecorativeShape = styled.div`
   box-shadow: -12px -12px 0 0 #d8bfdc;
 `;
 
-const LoginPage: React.FC = () => {
-  return (
-    <Container>
-      <LeftSide>
-        <BackButton to="/">
-          <FaArrowLeft />
-          Voltar
-        </BackButton>
-
-        <Form>
-          <Title>Welcome Back!</Title>
-
-          <Label>Username:</Label>
-          <Input type="text" placeholder="Enter username" />
-
-          <Label>Password:</Label>
-          <Input type="password" placeholder="Enter password" />
-
-          <Button type="submit">Login</Button>
-
-          <RegisterText>
-            Don’t have an account?
-            <Link to="/register">Register</Link>
-          </RegisterText>
-
-          <TeacherText>
-            É professor?
-            <Link to="/professor-login">Clique aqui</Link>
-          </TeacherText>
-        </Form>
-
-        <DecorativeShape />
-      </LeftSide>
-
-      <RightSide />
-    </Container>
-  );
-};
-
-export default LoginPage;

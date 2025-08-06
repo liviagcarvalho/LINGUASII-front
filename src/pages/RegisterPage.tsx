@@ -1,7 +1,132 @@
-import React from "react";
+import React, { useState } from "react";
 import styled from "styled-components";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { FaArrowLeft } from "react-icons/fa";
+
+const RegisterPage: React.FC = () => {
+  const navigate = useNavigate();
+
+  const [nome, setNome] = useState("");
+  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
+  const [senha, setSenha] = useState("");
+  const [confirmarSenha, setConfirmarSenha] = useState("");
+  const [mensagemErro, setMensagemErro] = useState("");
+  const [mensagemSucesso, setMensagemSucesso] = useState("");
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    // Verificar se senhas coincidem
+    if (senha !== confirmarSenha) {
+      setMensagemErro("As senhas não coincidem.");
+      return;
+    }
+
+    try {
+      const resposta = await fetch("http://localhost:8000/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email,
+          username,
+          nome,
+          senha,
+        }),
+      });
+
+      const dados = await resposta.json();
+
+      if (!resposta.ok) {
+        setMensagemErro(dados.detail || "Erro ao registrar usuário.");
+      } else {
+        setMensagemErro("");
+        setMensagemSucesso("Usuário cadastrado com sucesso!");
+        setTimeout(() => {
+          navigate("/login");
+        }, 1500);
+      }
+    } catch (erro) {
+      setMensagemErro("Erro de conexão com o servidor.");
+    }
+  };
+
+  return (
+    <Container>
+      <LeftSide>
+        <Shadow />
+        <Shape />
+      </LeftSide>
+
+      <RightSide>
+        <BackButton to="/">
+          <FaArrowLeft />
+          Voltar
+        </BackButton>
+
+        <Form onSubmit={handleSubmit}>
+          <Title>Please Fill out form to Register!</Title>
+
+          <Label>Full name:</Label>
+          <Input
+            type="text"
+            placeholder="Your full name"
+            value={nome}
+            onChange={(e) => setNome(e.target.value)}
+          />
+
+          <Label>Username:</Label>
+          <Input
+            type="text"
+            placeholder="Choose a username"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+          />
+
+          <Label>Email:</Label>
+          <Input
+            type="email"
+            placeholder="Enter your email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+
+          <Label>Password:</Label>
+          <Input
+            type="password"
+            placeholder="Create a password"
+            value={senha}
+            onChange={(e) => setSenha(e.target.value)}
+          />
+
+          <Label>Confirm Password:</Label>
+          <Input
+            type="password"
+            placeholder="Repeat your password"
+            value={confirmarSenha}
+            onChange={(e) => setConfirmarSenha(e.target.value)}
+          />
+
+          {mensagemErro && <ErrorMsg>{mensagemErro}</ErrorMsg>}
+          {mensagemSucesso && <SuccessMsg>{mensagemSucesso}</SuccessMsg>}
+
+          <Button type="submit">Register</Button>
+
+          <LoginText>
+            Yes I have an account?{" "}
+            <span>
+              <Link to="/login">Login</Link>
+            </span>
+          </LoginText>
+        </Form>
+      </RightSide>
+    </Container>
+  );
+};
+
+export default RegisterPage;
 
 const Container = styled.div`
   display: flex;
@@ -127,47 +252,14 @@ const LoginText = styled.p`
   }
 `;
 
-const RegisterPage: React.FC = () => {
-  return (
-    <Container>
-      <LeftSide>
-        <Shadow />
-        <Shape />
-      </LeftSide>
+const ErrorMsg = styled.p`
+  color: red;
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+`;
 
-      <RightSide>
-        <BackButton to="/">
-          <FaArrowLeft />
-          Voltar
-        </BackButton>
-
-        <Form>
-          <Title>Please Fill out form to Register!</Title>
-
-          <Label>Full name:</Label>
-          <Input type="text" placeholder="Your full name" />
-
-          <Label>Username:</Label>
-          <Input type="text" placeholder="Choose a username" />
-
-          <Label>Email:</Label>
-          <Input type="email" placeholder="Enter your email" />
-
-          <Label>Password:</Label>
-          <Input type="password" placeholder="Create a password" />
-
-          <Label>Confirm Password:</Label>
-          <Input type="password" placeholder="Repeat your password" />
-
-          <Button type="submit">Register</Button>
-
-          <LoginText>
-            Yes I have an account? <span><Link to="/login">Login</Link></span>
-          </LoginText>
-        </Form>
-      </RightSide>
-    </Container>
-  );
-};
-
-export default RegisterPage;
+const SuccessMsg = styled.p`
+  color: green;
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+`;
