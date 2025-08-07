@@ -1,4 +1,4 @@
-// src/context/AuthContext.tsx
+/// src/context/AuthContext.tsx
 import React, { createContext, useContext, useEffect, useState } from "react";
 
 interface UserPayload {
@@ -6,6 +6,8 @@ interface UserPayload {
   username: string;
   is_professor: boolean;
   exp: number;
+  email?: string;
+  creditos?: number;
 }
 
 interface AuthContextType {
@@ -14,6 +16,7 @@ interface AuthContextType {
   login: (token: string) => void;
   logout: () => void;
   isAuthenticated: boolean;
+  setUser: (user: UserPayload | null) => void; // ✅ NOVO
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -22,6 +25,7 @@ const AuthContext = createContext<AuthContextType>({
   login: () => {},
   logout: () => {},
   isAuthenticated: false,
+  setUser: () => {}, // ✅ NOVO
 });
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -50,10 +54,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const logout = () => {
     localStorage.removeItem("token");
     setToken(null);
+    setUser(null);
   };
 
   return (
-    <AuthContext.Provider value={{ token, user, login, logout, isAuthenticated: !!token }}>
+    <AuthContext.Provider value={{ token, user, login, logout, isAuthenticated: !!token, setUser }}>
       {children}
     </AuthContext.Provider>
   );

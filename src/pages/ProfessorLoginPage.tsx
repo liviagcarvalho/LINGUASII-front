@@ -2,9 +2,12 @@ import React, { useState } from "react";
 import styled from "styled-components";
 import { Link, useNavigate } from "react-router-dom";
 import { FaArrowLeft } from "react-icons/fa";
+import { useAuth } from "../context/AuthContext"; // ✅ Importa o contexto
 
 const ProfessorLoginPage: React.FC = () => {
   const navigate = useNavigate();
+  const { setUser, login } = useAuth(); // ✅ Usa setUser e login do contexto
+
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [mensagemErro, setMensagemErro] = useState("");
@@ -34,9 +37,19 @@ const ProfessorLoginPage: React.FC = () => {
         return;
       }
 
+      // ✅ Salva o token e o usuário no contexto
       localStorage.setItem("token", data.access_token);
-      navigate("/professor-dashboard"); // Altere se necessário
+      setUser({
+        username: payload.username,
+        email: payload.email,
+        is_professor: payload.is_professor,
+        creditos: payload.creditos,
+        sub: payload.sub,
+        exp: payload.exp,
+      });
+      login(data.access_token);
 
+      navigate("/perfil-professor");
     } catch (err) {
       setMensagemErro("Erro de conexão com o servidor.");
     }
@@ -89,7 +102,7 @@ const ProfessorLoginPage: React.FC = () => {
 
 export default ProfessorLoginPage;
 
-// ⬇️ Styled Components (sem mudanças grandes além do novo <ErrorMsg />)
+// ========== Styled Components ==========
 
 const Container = styled.div`
   display: flex;

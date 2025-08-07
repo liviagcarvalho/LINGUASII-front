@@ -1,0 +1,476 @@
+// src/pages/PerfilProfessor.tsx
+import React, { useEffect, useState } from "react";
+import styled from "styled-components";
+import HeaderLogado from "../components/HeaderLogado";
+import FundoUser from "../assets/User/FundoUser.png";
+import { useAuth } from "../context/AuthContext";
+import { useNavigate } from "react-router-dom";
+
+import FullCalendar from "@fullcalendar/react";
+import timeGridPlugin from "@fullcalendar/timegrid";
+import interactionPlugin, { DateClickArg } from "@fullcalendar/interaction";
+import { EventClickArg } from "@fullcalendar/core"; 
+import Modal from "react-modal";
+
+Modal.setAppElement("#root");
+
+const PerfilProf = () => {
+  const { user, logout, token } = useAuth();
+  const navigate = useNavigate();
+
+  const [events, setEvents] = useState<any[]>([]);
+  const [modalAberto, setModalAberto] = useState(false);
+  const [modalDeletarAberto, setModalDeletarAberto] = useState(false);
+  const [dataSelecionada, setDataSelecionada] = useState<string>("");
+  const [eventoSelecionado, setEventoSelecionado] = useState<any>(null);
+
+  const [formulario, setFormulario] = useState({
+    titulo: "",
+    tipo: "particular",
+    lingua: "ingles",
+    imagem: "",
+    repetir: "nenhum",
+    repetirAte: ""
+  });
+
+  useEffect(() => {
+    if (!user) return;
+    if (!user.is_professor) navigate("/");
+  }, [user, navigate]);
+
+  const handleLogout = () => {
+    logout();
+    navigate("/");
+  };
+
+  const abrirModal = (arg: DateClickArg) => {
+    setDataSelecionada(arg.dateStr.slice(0, 16)); // formato YYYY-MM-DDTHH:MM
+    setModalAberto(true);
+  };
+
+  const abrirModalDeletar = (arg: EventClickArg) => {
+    setEventoSelecionado(arg.event);
+    setModalDeletarAberto(true);
+  };
+
+  const fecharModal = () => {
+    setModalAberto(false);
+  };
+
+  const fecharModalDeletar = () => {
+    setModalDeletarAberto(false);
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    setFormulario({ ...formulario, [e.target.name]: e.target.value });
+  };
+
+  const criarAula = async () => {
+    if (!user || !token) return;
+
+    if (!formulario.titulo.trim()) {
+      alert("Por favor, insira um título para a aula.");
+      return;
+    }
+
+    const aulasParaCriar = [];
+
+    const dataInicial = new Date(dataSelecionada);
+    const repetir = formulario.repetir;
+    const repetirAte = formulario.repetirAte ? new Date(formulario.repetirAte) : null;
+
+    if (repetir !== "nenhum" && repetirAte) {
+      let atual = new Date(dataInicial);
+      while (atual <= repetirAte) {
+        aulasParaCriar.push(new Date(atual));
+        if (repetir === "diario") {
+          atual.setDate(atual.getDate() + 1);
+        } else if (repetir === "semanal") {
+          atual.setDate(atual.getDate() + 7);
+        }
+      }
+    } else {
+      aulasParaCriar.push(dataInicial);
+    }
+
+    try {
+      for (const data of aulasParaCriar) {
+        const response = await fetch("http://localhost:8000/aulas", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            titulo: formulario.titulo,
+            tipo: formulario.tipo,
+            lingua: formulario.lingua,
+            data: data.toISOString(),
+            professor_id: user.sub,
+            alunos_ids: [],
+            imagem: formulario.imagem,
+          }),
+        });
+
+        const dataRes = await response.json();
+
+        if (!response.ok) {
+          alert(dataRes.detail || "Erro ao criar aula");
+          return;
+        }
+
+        setEvents((prev) => [
+          ...prev,
+          {
+            id: dataRes.id,
+            title: formulario.titulo,
+            start: data.toISOString(),
+          },
+        ]);
+      }
+
+      fecharModal();
+    } catch (err) {
+      console.error(err);
+      alert("Erro ao conectar com o servidor.");
+    }
+  };
+
+  const deletarAula = async (deletarRepetidas: boolean) => {
+    if (!eventoSelecionado || !token) return;
+  
+    const aulaId = eventoSelecionado.id;
+  
+    try {
+      const url = deletarRepetidas
+        ? `http://localhost:8000/aulas/${aulaId}?repetir=true`
+        : `http://localhost:8000/aulas/${aulaId}`;
+  
+      const response = await fetch(url, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+  
+      if (!response.ok) {
+        const error = await response.json();
+        alert(error.detail || "Erro ao deletar aula.");
+        return;
+      }
+  
+      if (deletarRepetidas) {
+        const deletedIds: string[] = await response.json(); // backend retorna lista de IDs deletados
+        setEvents((prev) => prev.filter((ev) => !deletedIds.includes(ev.id)));
+      } else {
+        setEvents((prev) => prev.filter((ev) => ev.id !== aulaId));
+      }
+  
+      fecharModalDeletar();
+    } catch (err) {
+      console.error(err);
+      alert("Erro ao conectar com o servidor.");
+    }
+  };
+  
+
+  return (
+    <>
+      <HeaderLogado />
+      <Banner>
+        <img src={FundoUser} alt="Fundo Perfil" />
+        <OverlayText>Bem-vindo, {user?.username}!</OverlayText>
+      </Banner>
+
+      <MainContent>
+        <LogoutButton onClick={handleLogout}>Sair</LogoutButton>
+
+        <CalendarioWrapper>
+          <AddButton onClick={() => setModalAberto(true)}>+</AddButton>
+          <Calendario>
+            <FullCalendar
+              plugins={[timeGridPlugin, interactionPlugin]}
+              initialView="timeGridWeek"
+              selectable={true}
+              editable={false}
+              height="auto"
+              slotMinTime="05:00:00"
+              slotMaxTime="22:00:00"
+              events={events}
+              dateClick={abrirModal}
+              eventClick={abrirModalDeletar}
+              locale="pt-br"
+            />
+          </Calendario>
+        </CalendarioWrapper>
+      </MainContent>
+
+      {/* Modal Criar Aula */}
+      <Modal
+        isOpen={modalAberto}
+        onRequestClose={fecharModal}
+        style={{
+          content: {
+            position: "fixed",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            width: "420px",
+            background: "#fff",
+            borderRadius: "12px",
+            padding: "2rem",
+            fontFamily: "Poppins",
+            zIndex: 9999,
+          },
+          overlay: {
+            zIndex: 9998,
+            backgroundColor: "rgba(0, 0, 0, 0.4)",
+          },
+        }}
+      >
+        <h2 style={{ marginBottom: "1rem" }}>Criar nova aula</h2>
+
+        <FormGroup>
+          <label htmlFor="titulo">Título da Aula:</label>
+          <input
+            type="text"
+            name="titulo"
+            value={formulario.titulo}
+            onChange={handleInputChange}
+            placeholder="Ex: Conversação - Intermediário"
+          />
+        </FormGroup>
+
+        <FormGroup>
+          <label htmlFor="dataSelecionada">Data e Hora:</label>
+          <input
+            type="datetime-local"
+            name="dataSelecionada"
+            value={dataSelecionada}
+            onChange={(e) => setDataSelecionada(e.target.value)}
+          />
+        </FormGroup>
+
+        <FormGroup>
+          <label htmlFor="tipo">Tipo:</label>
+          <select name="tipo" value={formulario.tipo} onChange={handleInputChange}>
+            <option value="particular">Particular</option>
+            <option value="grupo">Grupo</option>
+          </select>
+        </FormGroup>
+
+        <FormGroup>
+          <label htmlFor="lingua">Língua:</label>
+          <select name="lingua" value={formulario.lingua} onChange={handleInputChange}>
+            <option value="ingles">Inglês</option>
+            <option value="espanhol">Espanhol</option>
+          </select>
+        </FormGroup>
+
+        <FormGroup>
+          <label htmlFor="imagem">Imagem (URL):</label>
+          <input
+            type="text"
+            name="imagem"
+            value={formulario.imagem}
+            onChange={handleInputChange}
+            placeholder="https://..."
+          />
+        </FormGroup>
+
+        <FormGroup>
+          <label htmlFor="repetir">Repetir:</label>
+          <select name="repetir" value={formulario.repetir} onChange={handleInputChange}>
+            <option value="nenhum">Nenhum</option>
+            <option value="diario">Todos os dias</option>
+            <option value="semanal">A cada 7 dias</option>
+          </select>
+        </FormGroup>
+
+        {formulario.repetir !== "nenhum" && (
+          <FormGroup>
+            <label htmlFor="repetirAte">Repetir até (data final):</label>
+            <input
+              type="date"
+              name="repetirAte"
+              value={formulario.repetirAte}
+              onChange={handleInputChange}
+            />
+          </FormGroup>
+        )}
+
+        <ModalButtons>
+          <button onClick={criarAula}>Criar Aula</button>
+          <button onClick={fecharModal}>Cancelar</button>
+        </ModalButtons>
+      </Modal>
+
+      {/* Modal Deletar Aula */}
+      <Modal
+      isOpen={modalDeletarAberto}
+      onRequestClose={fecharModalDeletar}
+      style={{
+        content: {
+          position: "fixed",
+          top: "50%",
+          left: "50%",
+          transform: "translate(-50%, -50%)",
+          width: "380px",
+          background: "#fff",
+          borderRadius: "12px",
+          padding: "2rem",
+          fontFamily: "Poppins",
+          zIndex: 9999,
+          textAlign: "center",
+        },
+        overlay: {
+          zIndex: 9998,
+          backgroundColor: "rgba(0, 0, 0, 0.4)",
+        },
+      }}
+    >
+      <h3>Deseja deletar esta aula?</h3>
+      <p style={{ marginTop: "0.5rem" }}>{eventoSelecionado?.title}</p>
+
+      <ModalButtons style={{ flexDirection: "column", gap: "0.8rem", marginTop: "1.5rem" }}>
+        <button onClick={() => deletarAula(false)}>Somente esta aula</button>
+        <button onClick={() => deletarAula(true)}>Esta e todas as futuras aulas repetidas</button>
+        <button onClick={fecharModalDeletar} style={{ backgroundColor: "#ccc", color: "#333" }}>
+          Cancelar
+        </button>
+      </ModalButtons>
+    </Modal>
+
+    </>
+  );
+};
+
+export default PerfilProf;
+
+// ======= Styled Components Extras =======
+
+const Banner = styled.div`
+  position: relative;
+  height: 280px;
+  overflow: hidden;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+`;
+
+const OverlayText = styled.h1`
+  position: absolute;
+  top: 2rem;
+  left: 3rem;
+  color: white;
+  font-size: 2rem;
+  font-weight: 700;
+`;
+
+const MainContent = styled.div`
+  padding: 2rem 3rem;
+  font-family: "Poppins", sans-serif;
+`;
+
+const LogoutButton = styled.button`
+  background: none;
+  border: none;
+  color: #39004d;
+  font-weight: bold;
+  font-size: 1.2rem;
+  cursor: pointer;
+  margin-bottom: 2rem;
+
+  &:hover {
+    text-decoration: underline;
+  }
+`;
+
+const CalendarioWrapper = styled.div`
+  position: relative;
+`;
+
+const AddButton = styled.button`
+  position: absolute;
+  right: 0;
+  top: -2.5rem;
+  background-color: #4b007d;
+  color: white;
+  font-size: 1.6rem;
+  border: none;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  cursor: pointer;
+
+  &:hover {
+    background-color: #6a1b9a;
+  }
+`;
+
+const Calendario = styled.div`
+  .fc {
+    font-family: "Poppins", sans-serif;
+  }
+
+  .fc-toolbar-title {
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: #32004b;
+  }
+
+  .fc-button {
+    background-color: #4b007d !important;
+    border: none !important;
+    border-radius: 6px !important;
+  }
+
+  .fc-daygrid-event,
+  .fc-timegrid-event {
+    background-color: #ab47bc;
+    border: none;
+    font-size: 0.85rem;
+  }
+`;
+
+const FormGroup = styled.div`
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 1rem;
+
+  label {
+    margin-bottom: 0.4rem;
+    font-weight: 600;
+    color: #4b007d;
+  }
+
+  select,
+  input {
+    padding: 0.6rem;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    font-size: 1rem;
+  }
+`;
+
+const ModalButtons = styled.div`
+  display: flex;
+  justify-content: space-between;
+  margin-top: 1.5rem;
+
+  button {
+    background-color: #4b007d;
+    color: white;
+    padding: 0.6rem 1.2rem;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+
+    &:hover {
+      background-color: #6a1b9a;
+    }
+  }
+`;

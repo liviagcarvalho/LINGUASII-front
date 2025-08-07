@@ -39,8 +39,8 @@ const LoginPage: React.FC = () => {
       }
 
       // Salvar token no contexto e redirecionar
-      login(data.access_token); // ✅ Usa AuthContext
-      navigate("/home-logado"); // ✅ Rota da HomePageLogado
+      login(data.access_token); 
+      navigate("/perfil"); 
 
     } catch (err) {
       setMensagemErro("Erro de conexão com o servidor.");

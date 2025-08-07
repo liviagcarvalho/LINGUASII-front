@@ -37,6 +37,7 @@ import PagamentoPix from "./pages/PagamentoPix";
 import SobrePageLogado from "./pages/AjudaSobreLogado";
 import AulasPublica from "./pages/CatalogoAulas";
 import AulasPageLogado from "./pages/CatalagoAulasLogado";
+import PerfilProf from "./pages/PerfilProfessor";
 
 
 
@@ -57,6 +58,7 @@ function App() {
           <Route path="/sobre-logado" element={<SobrePageLogado />} />
           <Route path="/aulas" element={<AulasPublica />} />
           <Route path="/aulas-logado" element={<AulasPageLogado />} />
+          <Route path="/perfil-professor" element={<PerfilProf />} />
 
         </Routes>
       </Router>
