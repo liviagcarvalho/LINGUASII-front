@@ -112,7 +112,7 @@ const HeaderLogado = () => {
       <Nav>
         <NavLink to="/home-logado">Home</NavLink>
         <NavLink to="/sobre-logado">Sobre</NavLink>
-        <NavLink to="/aulas">Aulas</NavLink>
+        <NavLink to="/aulas-logado">Aulas</NavLink>
         {isAluno && (
           <>
             <NavLink to="/reservas">Reservar</NavLink>

@@ -5,7 +5,7 @@ import { FaSearch } from "react-icons/fa";
 const SearchContainer = styled.div`
   width: 100%;
   max-width: 500px;
-  margin: 2rem auto 0rem auto;
+  margin: 0rem auto 0rem auto;
   position: relative;
 `;
 

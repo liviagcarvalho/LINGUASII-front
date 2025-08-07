@@ -35,6 +35,8 @@ import PerfilAluno from "./pages/PerfilAluno";
 import ComprasAluno from "./pages/ComprasAluno";
 import PagamentoPix from "./pages/PagamentoPix";
 import SobrePageLogado from "./pages/AjudaSobreLogado";
+import AulasPublica from "./pages/CatalogoAulas";
+import AulasPageLogado from "./pages/CatalagoAulasLogado";
 
 
 
@@ -53,6 +55,8 @@ function App() {
           <Route path="/compras" element={<ComprasAluno />} />
           <Route path="/pagamento" element={<PagamentoPix />} />
           <Route path="/sobre-logado" element={<SobrePageLogado />} />
+          <Route path="/aulas" element={<AulasPublica />} />
+          <Route path="/aulas-logado" element={<AulasPageLogado />} />
 
         </Routes>
       </Router>
