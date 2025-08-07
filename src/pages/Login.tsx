@@ -1,10 +1,13 @@
+// src/pages/Login.tsx
 import React, { useState } from "react";
 import styled from "styled-components";
 import { Link, useNavigate } from "react-router-dom";
 import { FaArrowLeft } from "react-icons/fa";
+import { useAuth } from "../context/AuthContext"; 
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
+  const { login } = useAuth(); 
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [mensagemErro, setMensagemErro] = useState("");
@@ -35,9 +38,9 @@ const LoginPage: React.FC = () => {
         return;
       }
 
-      // Salvar token e redirecionar
-      localStorage.setItem("token", data.access_token);
-      navigate("/aluno-dashboard"); // Substitua pela rota real
+      // Salvar token no contexto e redirecionar
+      login(data.access_token); // ✅ Usa AuthContext
+      navigate("/home-logado"); // ✅ Rota da HomePageLogado
 
     } catch (err) {
       setMensagemErro("Erro de conexão com o servidor.");
@@ -86,7 +89,8 @@ const LoginPage: React.FC = () => {
 
 export default LoginPage;
 
-// Adicione no final do arquivo
+// =================== ESTILOS ===================
+
 const ErrorMsg = styled.p`
   color: red;
   font-size: 0.9rem;
