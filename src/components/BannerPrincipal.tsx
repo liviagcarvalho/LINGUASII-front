@@ -1,4 +1,5 @@
 import styled from "styled-components";
+import { Link } from "react-router-dom"; // Import do Link
 import Capa from "../assets/HomePage/CapaHome.png";
 
 const Banner = styled.section`
@@ -17,7 +18,7 @@ const Banner = styled.section`
 
 const BannerContent = styled.div`
   position: absolute;
-  top: 18%; /* move o conteúdo mais para cima */
+  top: 18%;
   left: 50%;
   transform: translateX(-50%);
   text-align: center;
@@ -34,7 +35,8 @@ const TituloBanner = styled.h2`
   }
 `;
 
-const BotaoBanner = styled.button`
+// Estilização do Link como botão
+const BotaoBanner = styled(Link)`
   background-color: #6a0dad;
   color: white;
   padding: 0.45rem 1.2rem;
@@ -43,6 +45,8 @@ const BotaoBanner = styled.button`
   font-weight: 600;
   font-size: 0.9rem;
   cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
   transition: all 0.2s ease-in-out;
 
   &:hover {
@@ -58,11 +62,10 @@ const BannerPrincipal = () => {
           Explore Seu Potencial <br />
           Encontre O Curso Ideal Para Você
         </TituloBanner>
-        <BotaoBanner>Saiba Mais</BotaoBanner>
+        <BotaoBanner to="/aulas">Saiba Mais</BotaoBanner>
       </BannerContent>
     </Banner>
   );
 };
 
 export default BannerPrincipal;
-

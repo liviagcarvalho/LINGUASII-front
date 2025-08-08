@@ -111,7 +111,7 @@ import React from "react";
 import styled from "styled-components";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
-import AulaCard from "../components/AulaCard";
+import AulaCard from "../components/AulaCard2";
 
 // IMPORTA AS IMAGENS (Vite faz o bundling e vira URL)
 import EtiquetaDigitalImg from "../assets/carrossel/EtiquetaDigital.png";
