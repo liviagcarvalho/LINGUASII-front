@@ -1,24 +1,34 @@
 // src/pages/PerfilProfessor.tsx
 import React, { useEffect, useState } from "react";
 import styled from "styled-components";
-import HeaderLogado from "../components/HeaderLogado";
 import FundoUser from "../assets/User/FundoUser.png";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
-
+import { FiLogOut } from "react-icons/fi";
 import FullCalendar from "@fullcalendar/react";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin, { DateClickArg } from "@fullcalendar/interaction";
-import { EventClickArg } from "@fullcalendar/core"; 
+import { EventClickArg } from "@fullcalendar/core";
 import Modal from "react-modal";
 
 Modal.setAppElement("#root");
+
+type AulaEvent = {
+  id: string;
+  title: string;
+  start: string;
+  extendedProps: {
+    tipo: "grupo" | "particular";
+    lingua?: "ingles" | "espanhol";
+  };
+  classNames?: string[];
+};
 
 const PerfilProf = () => {
   const { user, logout, token } = useAuth();
   const navigate = useNavigate();
 
-  const [events, setEvents] = useState<any[]>([]);
+  const [events, setEvents] = useState<AulaEvent[]>([]);
   const [modalAberto, setModalAberto] = useState(false);
   const [modalDeletarAberto, setModalDeletarAberto] = useState(false);
   const [dataSelecionada, setDataSelecionada] = useState<string>("");
@@ -38,13 +48,55 @@ const PerfilProf = () => {
     if (!user.is_professor) navigate("/");
   }, [user, navigate]);
 
+  useEffect(() => {
+    const carregarAulas = async () => {
+      if (!token) return;
+
+      try {
+        const response = await fetch("http://localhost:8000/minhas-aulas", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          console.error(data.detail);
+          return;
+        }
+
+        const eventosConvertidos: AulaEvent[] = data.map((aula: any) => {
+          const tipo = (aula.tipo as "grupo" | "particular") ?? "particular";
+          return {
+            id: aula.id,
+            title: aula.titulo || "Aula",
+            start: aula.data,
+            extendedProps: {
+              tipo,
+              lingua: aula.lingua,
+            },
+            classNames: [tipo === "grupo" ? "evento--grupo" : "evento--particular"],
+          };
+        });
+
+        setEvents(eventosConvertidos);
+      } catch (err) {
+        console.error("Erro ao carregar aulas:", err);
+      }
+    };
+
+    carregarAulas();
+  }, [token]);
+
   const handleLogout = () => {
     logout();
     navigate("/");
   };
 
   const abrirModal = (arg: DateClickArg) => {
-    setDataSelecionada(arg.dateStr.slice(0, 16)); // formato YYYY-MM-DDTHH:MM
+    // formato YYYY-MM-DDTHH:MM
+    setDataSelecionada(arg.dateStr.slice(0, 16));
     setModalAberto(true);
   };
 
@@ -53,13 +105,8 @@ const PerfilProf = () => {
     setModalDeletarAberto(true);
   };
 
-  const fecharModal = () => {
-    setModalAberto(false);
-  };
-
-  const fecharModalDeletar = () => {
-    setModalDeletarAberto(false);
-  };
+  const fecharModal = () => setModalAberto(false);
+  const fecharModalDeletar = () => setModalDeletarAberto(false);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormulario({ ...formulario, [e.target.name]: e.target.value });
@@ -73,8 +120,7 @@ const PerfilProf = () => {
       return;
     }
 
-    const aulasParaCriar = [];
-
+    const aulasParaCriar: Date[] = [];
     const dataInicial = new Date(dataSelecionada);
     const repetir = formulario.repetir;
     const repetirAte = formulario.repetirAte ? new Date(formulario.repetirAte) : null;
@@ -105,7 +151,8 @@ const PerfilProf = () => {
             titulo: formulario.titulo,
             tipo: formulario.tipo,
             lingua: formulario.lingua,
-            data: data.toISOString(),
+            // Convertendo para UTC-3 conforme seu comentário original
+            data: new Date(data.getTime() - 3 * 60 * 60 * 1000).toISOString(),
             professor_id: user.sub,
             alunos_ids: [],
             imagem: formulario.imagem,
@@ -119,12 +166,19 @@ const PerfilProf = () => {
           return;
         }
 
+        const tipo = formulario.tipo as "grupo" | "particular";
+
         setEvents((prev) => [
           ...prev,
           {
             id: dataRes.id,
             title: formulario.titulo,
             start: data.toISOString(),
+            extendedProps: {
+              tipo,
+              lingua: formulario.lingua as "ingles" | "espanhol",
+            },
+            classNames: [tipo === "grupo" ? "evento--grupo" : "evento--particular"],
           },
         ]);
       }
@@ -138,53 +192,73 @@ const PerfilProf = () => {
 
   const deletarAula = async (deletarRepetidas: boolean) => {
     if (!eventoSelecionado || !token) return;
-  
+
     const aulaId = eventoSelecionado.id;
-  
+
     try {
       const url = deletarRepetidas
         ? `http://localhost:8000/aulas/${aulaId}?repetir=true`
         : `http://localhost:8000/aulas/${aulaId}`;
-  
+
       const response = await fetch(url, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
-  
+
       if (!response.ok) {
         const error = await response.json();
         alert(error.detail || "Erro ao deletar aula.");
         return;
       }
-  
+
       if (deletarRepetidas) {
-        const deletedIds: string[] = await response.json(); // backend retorna lista de IDs deletados
+        const deletedIds: string[] = await response.json();
         setEvents((prev) => prev.filter((ev) => !deletedIds.includes(ev.id)));
       } else {
         setEvents((prev) => prev.filter((ev) => ev.id !== aulaId));
       }
-  
+
       fecharModalDeletar();
     } catch (err) {
       console.error(err);
       alert("Erro ao conectar com o servidor.");
     }
   };
-  
+
+  // === RENDER CUSTOMIZADO DO EVENTO ===
+  // Mostra: horário (timeText) + título + badge do tipo
+  const renderEvento = (info: any) => {
+    const tipo = info.event.extendedProps?.tipo as "grupo" | "particular";
+    const tipoLabel = tipo === "grupo" ? "Grupo" : "Particular";
+
+    return (
+      <div className="evento__conteudo">
+        <div className="evento__linha1">{info.timeText}</div>
+        <div className="evento__linha2">
+          <strong>{info.event.title}</strong>
+          <span className={`badge ${tipo === "grupo" ? "badge--grupo" : "badge--particular"}`}>
+            {tipoLabel}
+          </span>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <>
-      <HeaderLogado />
       <Banner>
         <img src={FundoUser} alt="Fundo Perfil" />
         <OverlayText>Bem-vindo, {user?.username}!</OverlayText>
       </Banner>
-
+  
       <MainContent>
-        <LogoutButton onClick={handleLogout}>Sair</LogoutButton>
-
+        <LogoutButton onClick={handleLogout}>
+          <FiLogOut size={20} />
+          <span>Sair</span>
+        </LogoutButton>
+  
         <CalendarioWrapper>
           <AddButton onClick={() => setModalAberto(true)}>+</AddButton>
           <Calendario>
@@ -200,6 +274,12 @@ const PerfilProf = () => {
               dateClick={abrirModal}
               eventClick={abrirModalDeletar}
               locale="pt-br"
+              eventContent={renderEvento}
+              eventClassNames={(arg) =>
+                arg.event.extendedProps?.tipo === "grupo"
+                  ? ["evento--grupo"]
+                  : ["evento--particular"]
+              }
             />
           </Calendario>
         </CalendarioWrapper>
@@ -307,40 +387,39 @@ const PerfilProf = () => {
 
       {/* Modal Deletar Aula */}
       <Modal
-      isOpen={modalDeletarAberto}
-      onRequestClose={fecharModalDeletar}
-      style={{
-        content: {
-          position: "fixed",
-          top: "50%",
-          left: "50%",
-          transform: "translate(-50%, -50%)",
-          width: "380px",
-          background: "#fff",
-          borderRadius: "12px",
-          padding: "2rem",
-          fontFamily: "Poppins",
-          zIndex: 9999,
-          textAlign: "center",
-        },
-        overlay: {
-          zIndex: 9998,
-          backgroundColor: "rgba(0, 0, 0, 0.4)",
-        },
-      }}
-    >
-      <h3>Deseja deletar esta aula?</h3>
-      <p style={{ marginTop: "0.5rem" }}>{eventoSelecionado?.title}</p>
+        isOpen={modalDeletarAberto}
+        onRequestClose={fecharModalDeletar}
+        style={{
+          content: {
+            position: "fixed",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            width: "380px",
+            background: "#fff",
+            borderRadius: "12px",
+            padding: "2rem",
+            fontFamily: "Poppins",
+            zIndex: 9999,
+            textAlign: "center",
+          },
+          overlay: {
+            zIndex: 9998,
+            backgroundColor: "rgba(0, 0, 0, 0.4)",
+          },
+        }}
+      >
+        <h3>Deseja deletar esta aula?</h3>
+        <p style={{ marginTop: "0.5rem" }}>{eventoSelecionado?.title}</p>
 
-      <ModalButtons style={{ flexDirection: "column", gap: "0.8rem", marginTop: "1.5rem" }}>
-        <button onClick={() => deletarAula(false)}>Somente esta aula</button>
-        <button onClick={() => deletarAula(true)}>Esta e todas as futuras aulas repetidas</button>
-        <button onClick={fecharModalDeletar} style={{ backgroundColor: "#ccc", color: "#333" }}>
-          Cancelar
-        </button>
-      </ModalButtons>
-    </Modal>
-
+        <ModalButtons style={{ flexDirection: "column", gap: "0.8rem", marginTop: "1.5rem" }}>
+          <button onClick={() => deletarAula(false)}>Somente esta aula</button>
+          <button onClick={() => deletarAula(true)}>Esta e todas as futuras aulas repetidas</button>
+          <button onClick={fecharModalDeletar} style={{ backgroundColor: "#ccc", color: "#333" }}>
+            Cancelar
+          </button>
+        </ModalButtons>
+      </Modal>
     </>
   );
 };
@@ -375,20 +454,6 @@ const MainContent = styled.div`
   font-family: "Poppins", sans-serif;
 `;
 
-const LogoutButton = styled.button`
-  background: none;
-  border: none;
-  color: #39004d;
-  font-weight: bold;
-  font-size: 1.2rem;
-  cursor: pointer;
-  margin-bottom: 2rem;
-
-  &:hover {
-    text-decoration: underline;
-  }
-`;
-
 const CalendarioWrapper = styled.div`
   position: relative;
 `;
@@ -405,6 +470,7 @@ const AddButton = styled.button`
   width: 40px;
   height: 40px;
   cursor: pointer;
+  margin-bottom: 10rem;
 
   &:hover {
     background-color: #6a1b9a;
@@ -428,11 +494,57 @@ const Calendario = styled.div`
     border-radius: 6px !important;
   }
 
+  /* Remove cor default pra usar nossas classes */
   .fc-daygrid-event,
   .fc-timegrid-event {
-    background-color: #ab47bc;
     border: none;
-    font-size: 0.85rem;
+    font-size: 0.9rem;
+  }
+
+  /* Container interno do evento */
+  .evento__conteudo {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 4px 6px;
+  }
+  .evento__linha1 {
+    font-size: 0.8rem;
+    opacity: 0.9;
+  }
+  .evento__linha2 {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    line-height: 1.2;
+  }
+
+  /* Badges e cores por tipo */
+  .badge {
+    font-size: 0.7rem;
+    padding: 2px 6px;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.2);
+    border: 1px solid rgba(255,255,255,0.4);
+  }
+
+  /* Fundo do evento por tipo */
+  .evento--grupo {
+    background-color: #1976d2 !important; /* azul para grupo */
+    color: #fff !important;
+  }
+  .evento--particular {
+    background-color: #2e7d32 !important; /* verde para particular */
+    color: #fff !important;
+  }
+
+  .badge--grupo {
+    background: rgba(255,255,255,0.15);
+    border-color: rgba(255,255,255,0.35);
+  }
+  .badge--particular {
+    background: rgba(255,255,255,0.15);
+    border-color: rgba(255,255,255,0.35);
   }
 `;
 
@@ -472,5 +584,23 @@ const ModalButtons = styled.div`
     &:hover {
       background-color: #6a1b9a;
     }
+  }
+`;
+
+const LogoutButton = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: none;
+  border: none;
+  color: #39004d;
+  font-weight: bold;
+  font-size: 1.2rem;
+  cursor: pointer;
+  margin-bottom: 2rem;
+  transition: color 0.2s ease;
+
+  &:hover {
+    color: #520066;
   }
 `;

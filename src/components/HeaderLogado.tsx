@@ -1,4 +1,4 @@
-// Header.tsx
+// HeaderLogado.tsx
 import React from "react";
 import styled from "styled-components";
 import { Link } from "react-router-dom";
@@ -89,18 +89,31 @@ const RegisterLink = styled(Link)`
   }
 `;
 
-const IconLink = styled(Link)`
-  font-size: 2rem;
-  color: #4a457a;
+const ProfileLink = styled(Link)`
   display: flex;
   align-items: center;
+  gap: 0.5rem;
+  color: #4a457a;
+  text-decoration: none;
+  font-weight: 600;
+  font-family: 'Inter', sans-serif;
 
   &:hover {
     color: #6a0dad;
   }
+
+  .label {
+    font-size: 0.95rem;
+  }
+
+  /* Esconde o texto em telas muito pequenas para não quebrar layout */
+  @media (max-width: 640px) {
+    .label {
+      display: none;
+    }
+  }
 `;
 
-// COMPONENT
 const HeaderLogado = () => {
   const { isAuthenticated, user } = useAuth();
   const isAluno = isAuthenticated && user && !user.is_professor;
@@ -110,9 +123,6 @@ const HeaderLogado = () => {
       <Logo>LinguaLab</Logo>
 
       <Nav>
-        <NavLink to="/home-logado">Home</NavLink>
-        <NavLink to="/sobre-logado">Sobre</NavLink>
-        <NavLink to="/aulas-logado">Aulas</NavLink>
         {isAluno && (
           <>
             <NavLink to="/reservas">Reservar</NavLink>
@@ -123,9 +133,10 @@ const HeaderLogado = () => {
 
       <ButtonGroup>
         {isAluno ? (
-          <IconLink to="/perfil">
-            <FaUserCircle />
-          </IconLink>
+          <ProfileLink to="/perfil" aria-label="Ir para seu perfil">
+            <FaUserCircle size={26} />
+            <span className="label">Seu Perfil</span>
+          </ProfileLink>
         ) : (
           <>
             <LoginLink to="/login">Login</LoginLink>

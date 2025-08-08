@@ -8,11 +8,11 @@ const ComprasAluno = () => {
   const navigate = useNavigate();
 
   const pacotes = [
-    { creditos: 1, preco: "R$59,90" },
-    { creditos: 5, preco: "R$299,90" },
-    { creditos: 10, preco: "R$499,90" },
-    { creditos: 30, preco: "R$1.199,90" },
-    { creditos: 60, preco: "R$1.999,90" },
+    { creditos: 1, preco: "R$69,90" },
+    { creditos: 5, preco: "R$209,90" },
+    { creditos: 10, preco: "R$469,90" },
+    { creditos: 30, preco: "R$1.109,90" },
+    { creditos: 60, preco: "R$1.619,90" },
   ];
 
   return (
