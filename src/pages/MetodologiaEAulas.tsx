@@ -120,10 +120,10 @@ import FinancasImg from "../assets/carrossel/Financas.png";
 import ConversacaoImg from "../assets/carrossel/Conversacao.png";
 
 const aulas = [
-  { title: "Etiqueta Digital", duration: "7h30min", img: EtiquetaDigitalImg },
-  { title: "Marketing", duration: "3h50min", img: MarketingImg },
-  { title: "Finanças e Contabilidade", duration: "1h12min", img: FinancasImg },
-  { title: "Conversação Profissional", duration: "2h40min", img: ConversacaoImg },
+  { title: "Etiqueta Digital", duration: "1h00min", img: EtiquetaDigitalImg },
+  { title: "Marketing", duration: "1h00min", img: MarketingImg },
+  { title: "Finanças e Contabilidade", duration: "1h00min", img: FinancasImg },
+  { title: "Conversação Profissional", duration: "1h00min", img: ConversacaoImg },
 ];
 
 const AulasPage = () => {
