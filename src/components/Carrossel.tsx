@@ -77,22 +77,22 @@ const AulasPopularesCarousel = () => {
     {
       title: "Etiqueta Digital",
       duration: "7h30mins",
-      img: "https://source.unsplash.com/random/400x300?meeting",
+      img: "src/assets/carrossel/EtiquetaDigital.png",
     },
     {
       title: "Marketing",
       duration: "3hs50mins",
-      img: "https://source.unsplash.com/random/400x300?presentation",
+      img: "src/assets/carrossel/Marketing.png",
     },
     {
       title: "Finanças e Contabilidade",
       duration: "1h12mins",
-      img: "https://source.unsplash.com/random/400x300?finance",
+      img: "src/assets/carrossel/Financas.png",
     },
     {
       title: "Conversação Profissional",
       duration: "2h40mins",
-      img: "https://source.unsplash.com/random/400x300?conversation",
+      img: "src/assets/carrossel/Conversacao.png",
     },
   ];
 

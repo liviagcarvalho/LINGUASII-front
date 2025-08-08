@@ -35,7 +35,7 @@ import PerfilAluno from "./pages/PerfilAluno";
 import ComprasAluno from "./pages/ComprasAluno";
 import PagamentoPix from "./pages/PagamentoPix";
 //import SobrePageLogado from "./pages/AjudaSobreLogado";
-import AulasPublica from "./pages/CatalogoAulas";
+import AulasPublica from "./pages/MetodologiaEAulas";
 //import AulasPageLogado from "./pages/CatalagoAulasLogado";
 import PerfilProf from "./pages/PerfilProfessor";
 import Reservas from "./pages/Reservas";

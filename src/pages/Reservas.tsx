@@ -1,5 +1,5 @@
 // src/pages/Reservas.tsx
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import styled from "styled-components";
 import HeaderLogado from "../components/HeaderLogado";
 import Footer from "../components/Footer";
@@ -42,6 +42,19 @@ const Reservas = () => {
   const [aulas, setAulas] = useState<Evento[]>([]);
   const [modalAberto, setModalAberto] = useState(false);
   const [aulaSelecionada, setAulaSelecionada] = useState<any>(null);
+
+  // ====== NOVO: filtros ======
+  const [filtros, setFiltros] = useState<{ lingua: "todos" | AulaAPI["lingua"]; tipo: "todos" | AulaAPI["tipo"] }>({
+    lingua: "todos",
+    tipo: "todos",
+  });
+
+  const handleFiltroChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const { name, value } = e.target as { name: "lingua" | "tipo"; value: any };
+    setFiltros((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const limparFiltros = () => setFiltros({ lingua: "todos", tipo: "todos" });
 
   // ---- helpers ----
   const labelTipo = (t: AulaAPI["tipo"]) => (t === "grupo" ? "Em grupo" : "Particular");
@@ -128,13 +141,12 @@ const Reservas = () => {
         window.dispatchEvent(new CustomEvent("creditos-atualizados", { detail: novosCreditos }));
       }
 
-      // Se for PARTICULAR, ela fica lotada imediatamente -> remove do calendário local
+      // Se for PARTICULAR, remove do calendário local (lotou);
+      // Se for GRUPO, recarrega do servidor (pode ter lotado).
       const tipo = aulaSelecionada?.extendedProps?.tipo as AulaAPI["tipo"];
       if (tipo === "particular") {
         setAulas((prev) => prev.filter((ev) => ev.id !== aulaSelecionada.id));
       } else {
-        // Se for GRUPO, refaça a consulta ao servidor.
-        // Se a turma lotou com esta reserva, ela não virá mais na listagem e sumirá do calendário.
         await buscarAulas();
       }
 
@@ -145,6 +157,15 @@ const Reservas = () => {
       alert("Erro ao conectar com o servidor.");
     }
   };
+
+  // ====== NOVO: filtrar aulas conforme filtros selecionados ======
+  const aulasFiltradas = useMemo(() => {
+    return aulas.filter((ev) => {
+      const linguaOk = filtros.lingua === "todos" || ev.extendedProps.lingua === filtros.lingua;
+      const tipoOk = filtros.tipo === "todos" || ev.extendedProps.tipo === filtros.tipo;
+      return linguaOk && tipoOk;
+    });
+  }, [aulas, filtros]);
 
   // Renderização custom do conteúdo do evento
   const renderEventContent = (arg: EventContentArg) => {
@@ -165,6 +186,29 @@ const Reservas = () => {
       <HeaderLogado />
 
       <Container>
+        {/* ====== NOVO: Barra de filtros ====== */}
+        <FilterBar>
+          <FilterGroup>
+            <label htmlFor="lingua">Idioma</label>
+            <select name="lingua" id="lingua" value={filtros.lingua} onChange={handleFiltroChange}>
+              <option value="todos">Todos</option>
+              <option value="ingles">Inglês</option>
+              <option value="espanhol">Espanhol</option>
+            </select>
+          </FilterGroup>
+
+          <FilterGroup>
+            <label htmlFor="tipo">Tipo</label>
+            <select name="tipo" id="tipo" value={filtros.tipo} onChange={handleFiltroChange}>
+              <option value="todos">Todos</option>
+              <option value="particular">Particular</option>
+              <option value="grupo">Em grupo</option>
+            </select>
+          </FilterGroup>
+
+          <ClearButton onClick={limparFiltros}>Limpar</ClearButton>
+        </FilterBar>
+
         <Title>Reservar Aulas</Title>
 
         <Legend>
@@ -183,7 +227,7 @@ const Reservas = () => {
             height="auto"
             slotMinTime="05:00:00"
             slotMaxTime="22:00:00"
-            events={aulas}
+            events={aulasFiltradas}   
             eventClick={abrirModalReserva}
             eventContent={renderEventContent}
             locale="pt-br"
@@ -259,6 +303,58 @@ const Title = styled.h1`
   font-weight: 700;
   margin-bottom: 1rem;
   text-align: center;
+`;
+
+/* ====== NOVO: estilos da barra de filtros ====== */
+const FilterBar = styled.div`
+  background: rgba(106, 13, 173, 0.06);
+  border: 1px solid #e6d6f3;
+  border-radius: 12px;
+  padding: 0.8rem 1rem;
+  margin: 0 auto 1rem auto;
+  max-width: 1000px;
+
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  justify-content: center;
+`;
+
+const FilterGroup = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+
+  label {
+    color: #4b007d;
+    font-weight: 600;
+    font-size: 0.95rem;
+  }
+
+  select {
+    padding: 0.4rem 0.6rem;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    font-size: 0.95rem;
+    min-width: 150px;
+    background: #fff;
+  }
+`;
+
+const ClearButton = styled.button`
+  background: #6a0dad;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 0.45rem 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.2s ease;
+
+  &:hover {
+    filter: brightness(0.95);
+  }
 `;
 
 const Legend = styled.div`

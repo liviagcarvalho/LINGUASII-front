@@ -58,7 +58,7 @@ const BannerPrincipal = () => {
           Explore Seu Potencial <br />
           Encontre O Curso Ideal Para Você
         </TituloBanner>
-        <BotaoBanner>Visite As Aulas</BotaoBanner>
+        <BotaoBanner>Saiba Mais</BotaoBanner>
       </BannerContent>
     </Banner>
   );

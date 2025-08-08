@@ -145,7 +145,7 @@ const LeftSide = styled.div`
 
 const Shape = styled.div`
   width: 220px;
-  height: 800px;
+  height: 850px;
   background: #4b007d;
   border-bottom-left-radius: 80px;
   border-top-left-radius: 0;
@@ -157,7 +157,7 @@ const Shadow = styled.div`
   position: absolute;
   left: 110px;
   width: 240px;
-  height: 800px;
+  height: 900px;
   background: #cda2db;
   border-bottom-left-radius: 200px;
   border-top-right-radius: -50px;
